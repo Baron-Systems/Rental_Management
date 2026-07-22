@@ -15,31 +15,79 @@ echo "    Rental Management - Build & Start"
 echo "========================================"
 echo ""
 
-# Step 1: Install dependencies
-echo "[1/5] Installing dependencies..."
+# ---------- Database Setup ----------
+DB_USER="rental_user"
+DB_PASS="rental_pass"
+DB_NAME="rental_management"
+DB_URL="postgresql://${DB_USER}:${DB_PASS}@localhost:5432/${DB_NAME}?schema=public"
+
+echo "[1/7] Checking PostgreSQL..."
+if ! command -v psql &> /dev/null; then
+  echo "  -> PostgreSQL not found, installing..."
+  apt-get update
+  apt-get install -y postgresql postgresql-contrib
+else
+  echo "  -> PostgreSQL already installed"
+fi
+
+echo "[2/7] Starting PostgreSQL service..."
+systemctl start postgresql
+systemctl enable postgresql
+
+sleep 2
+
+echo "[3/7] Creating database and user..."
+sudo -u postgres psql <<EOF
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${DB_USER}') THEN
+    CREATE ROLE ${DB_USER} WITH LOGIN PASSWORD '${DB_PASS}';
+  END IF;
+END
+\$\$;
+
+ALTER ROLE ${DB_USER} WITH LOGIN PASSWORD '${DB_PASS}';
+
+SELECT 'CREATE DATABASE ${DB_NAME} OWNER ${DB_USER}'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_NAME}')\gexec
+
+GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};
+EOF
+
+# Ensure .env exists with DATABASE_URL
+if [ ! -f ".env" ]; then
+  echo "[4/7] Creating .env file..."
+  touch .env
+fi
+
+if ! grep -q "DATABASE_URL" .env; then
+  echo "DATABASE_URL=\"${DB_URL}\"" >> .env
+  echo "  -> Added DATABASE_URL to .env"
+else
+  echo "  -> DATABASE_URL already exists in .env"
+fi
+
+# ---------- App Setup ----------
+echo "[5/7] Installing dependencies..."
 if [ ! -d "node_modules" ]; then
   npm install
 else
   echo "  -> node_modules found, skipping install"
 fi
 
-# Step 2: Generate Prisma Client
-echo "[2/5] Generating Prisma client..."
+echo "[6/7] Generating Prisma client..."
 npx prisma generate
 
-# Step 3: Apply database migrations
-echo "[3/5] Applying database migrations..."
+echo "[7/7] Applying database migrations..."
 npx prisma migrate deploy
 
-# Step 4: Seed database (safe - uses upsert)
-echo "[4/5] Seeding default data..."
+echo "[7/7] Seeding default data..."
 npx prisma db seed || true
 
-# Step 5: Build Next.js
-echo "[5/5] Building Next.js..."
+echo "[7/7] Building Next.js..."
 npm run build
 
-# Start server on custom port
+# ---------- Start Server ----------
 echo ""
 echo "========================================"
 echo "  App ready at: http://localhost:54123"
