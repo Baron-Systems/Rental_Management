@@ -1,0 +1,83 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+interface DueType {
+  id: string;
+  name: string;
+  isSystem: boolean;
+  isActive: boolean;
+}
+
+export default function SettingsPage() {
+  const [dueTypes, setDueTypes] = useState<DueType[]>([]);
+  const [newTypeName, setNewTypeName] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDueTypes();
+  }, []);
+
+  async function loadDueTypes() {
+    const res = await fetch('/api/settings/due-types');
+    const data = await res.json();
+    setDueTypes(data.dueTypes || []);
+    setLoading(false);
+  }
+
+  async function addDueType() {
+    if (!newTypeName.trim()) return;
+    const res = await fetch('/api/settings/due-types', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newTypeName }),
+    });
+    if (res.ok) {
+      setNewTypeName('');
+      loadDueTypes();
+    }
+  }
+
+  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">الإعدادات</h1>
+        <p className="mt-1 text-sm text-slate-500">إدارة إعدادات النظام وأنواع الاستحقاقات</p>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft">
+        <h3 className="mb-4 text-lg font-semibold text-slate-900">أنواع الاستحقاقات</h3>
+        <div className="mb-4 flex gap-2">
+          <input
+            value={newTypeName}
+            onChange={(e) => setNewTypeName(e.target.value)}
+            placeholder="اسم النوع الجديد"
+            className="input-premium flex-1"
+            onKeyDown={(e) => e.key === 'Enter' && addDueType()}
+          />
+          <button
+            onClick={addDueType}
+            className="btn-primary"
+          >
+            إضافة
+          </button>
+        </div>
+        <div className="space-y-2">
+          {dueTypes.map((dt) => (
+            <div key={dt.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 px-4 py-3">
+              <span className="text-sm font-medium text-slate-700">{dt.name}</span>
+              <span className={`text-xs px-2 py-1 rounded-full font-medium ${dt.isSystem ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-600'}`}>
+                {dt.isSystem ? 'نظامي' : 'مخصص'}
+              </span>
+            </div>
+          ))}
+        </div>
+        {dueTypes.length === 0 && (
+          <div className="text-center py-8 text-sm text-slate-500">لا توجد أنواع استحقاقات مضافة</div>
+        )}
+      </div>
+    </div>
+  );
+}
