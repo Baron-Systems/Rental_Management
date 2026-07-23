@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { LoadingState } from '@/components/ui/StatusMessage';
+import { Alert } from '@/components/ui/Alert';
 
 export default function EditTenantPage() {
   const { id } = useParams();
@@ -38,13 +40,13 @@ export default function EditTenantPage() {
     else { const d = await res.json(); setError(d.error || 'حدث خطأ'); }
   }
 
-  if (loading) return <div className="text-center">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات المستأجر..." />;
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <h2 className="text-xl font-bold">تعديل المستأجر</h2>
       <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-sm">
-        {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
+        {error && <Alert className="mb-4" title="تعذر حفظ التغييرات">{error}</Alert>}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <input placeholder="الاسم الكامل *" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} className="rounded-md border px-3 py-2 text-sm" required />
           <input placeholder="رقم الهوية" value={formData.nationalId} onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })} className="rounded-md border px-3 py-2 text-sm" />

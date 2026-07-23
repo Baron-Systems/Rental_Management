@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface StatementLine {
   id: string; date: string; type: 'due' | 'receipt'; typeName: string;
@@ -34,7 +35,7 @@ export default function TenantStatementPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="text-center">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل كشف الحساب..." />;
 
   return (
     <div className="space-y-4">

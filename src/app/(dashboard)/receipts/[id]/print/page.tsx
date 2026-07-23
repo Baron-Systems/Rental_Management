@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface ReceiptDetail {
   receiptNumber: string;
@@ -38,7 +39,7 @@ export default function PrintReceiptPage() {
     if (receipt) setTimeout(() => window.print(), 500);
   }, [receipt]);
 
-  if (!receipt) return <div className="min-h-screen p-10 text-center text-sm text-slate-500">جاري التحميل...</div>;
+  if (!receipt) return <LoadingState className="min-h-screen" message="جاري تحميل سند القبض..." />;
 
   const methodLabels: Record<string, string> = { cash: 'نقداً', cheque: 'شيك', bank_transfer: 'تحويل بنكي', card: 'بطاقة' };
   const r = receipt;

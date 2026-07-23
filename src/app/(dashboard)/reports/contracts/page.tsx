@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface ContractRow {
   contractNumber: string;
@@ -24,7 +25,7 @@ export default function ContractsReportPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-center">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل تقرير العقود..." />;
 
   const statusLabels: Record<string, string> = {
     draft: 'مسودة', active: 'نشط', expired: 'منتهي', cancelled: 'ملغي', evicted: 'تم الإخلاء',

@@ -4,6 +4,10 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { contractStatusLabels } from '@/components/ui/StatusBadge';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
+import { Alert } from '@/components/ui/Alert';
 import {
   ChevronLeft, Building2, MapPin, Layers, Home, Key, DoorOpen, User, Pencil, Trash2, FileText,
   Plus, X, ChevronDown, ChevronRight, Receipt, Banknote, DollarSign,
@@ -74,6 +78,8 @@ const TABS = [
 export default function BuildingDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [building, setBuilding] = useState<BuildingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -91,8 +97,8 @@ export default function BuildingDetailPage() {
     setLoading(false);
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
-  if (!building) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">العمارة غير موجودة</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات العمارة..." />;
+  if (!building) return <EmptyStateMessage title="العمارة غير موجودة" description="تعذر العثور على بيانات العمارة المطلوبة." />;
 
   const overviewStats = {
     floors: building.floors.length,
@@ -127,13 +133,17 @@ export default function BuildingDetailPage() {
           <div className="flex gap-2">
             <Link href={`/buildings/${id}/edit`} className="btn-secondary"><Pencil className="h-4 w-4" /> تعديل</Link>
             <button
-              onClick={() => {
-                if (confirm('هل أنت متأكد من الحذف؟')) {
-                  fetch(`/api/buildings/${id}`, { method: 'DELETE' }).then((res) => {
-                    if (res.ok) router.push('/buildings');
-                    else res.json().then((d) => alert(d.error || 'حدث خطأ'));
-                  });
-                }
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: 'حذف العمارة',
+                  description: 'سيتم حذف العمارة نهائيًا مع جميع بياناتها. لا يمكن التراجع عن هذا الإجراء.',
+                  variant: 'danger',
+                  confirmLabel: 'حذف',
+                });
+                if (!confirmed) return;
+                const res = await fetch(`/api/buildings/${id}`, { method: 'DELETE' });
+                if (res.ok) router.push('/buildings');
+                else { const d = await res.json(); toast.error(d.error || 'حدث خطأ أثناء حذف العمارة'); }
               }}
               className="btn-secondary text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
             >
@@ -233,6 +243,8 @@ function OverviewTab({ building, stats }: { building: BuildingData; stats: any }
 }
 
 function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRefresh: () => void }) {
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [expandedFloors, setExpandedFloors] = useState<Set<string>>(new Set(building.floors.map((f) => f.id)));
   const [selectedUnit, setSelectedUnit] = useState<UnitData | null>(null);
   const [showAddFloor, setShowAddFloor] = useState(false);
@@ -291,8 +303,13 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
   }
 
   async function deleteFloor(floorId: string) {
-    console.log('deleteFloor called', floorId);
-    if (!window.confirm('هل أنت متأكد من حذف هذا الطابق؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف الطابق',
+      description: 'هل أنت متأكد من حذف هذا الطابق؟',
+      variant: 'warning',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/floors/${floorId}`, { method: 'DELETE' });
       if (res.ok) {
@@ -301,11 +318,11 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
         const text = await res.text();
         let data: any = {};
         try { data = JSON.parse(text); } catch { data = { error: text || 'حدث خطأ' }; }
-        alert(data.error || 'حدث خطأ');
+        toast.error(data.error || 'حدث خطأ أثناء حذف الطابق');
       }
     } catch (err: any) {
       console.error('deleteFloor error:', err);
-      alert('فشل الاتصال بالخادم: ' + (err.message || 'حدث خطأ غير معروف'));
+      toast.error('فشل الاتصال بالخادم: ' + (err.message || 'حدث خطأ غير معروف'));
     }
   }
 
@@ -349,7 +366,13 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
   }
 
   async function deleteUnit(unitId: string) {
-    if (!confirm('هل أنت متأكد من حذف هذه الوحدة؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف الوحدة',
+      description: 'سيتم حذف الوحدة نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/units/${unitId}`, { method: 'DELETE' });
       if (res.ok) {
@@ -359,11 +382,11 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
         const text = await res.text();
         let data: any = {};
         try { data = JSON.parse(text); } catch { data = { error: text || 'حدث خطأ' }; }
-        alert(data.error || 'حدث خطأ');
+        toast.error(data.error || 'حدث خطأ أثناء حذف الوحدة');
       }
     } catch (err: any) {
       console.error('deleteUnit error:', err);
-      alert('فشل الاتصال بالخادم: ' + (err.message || 'حدث خطأ غير معروف'));
+      toast.error('فشل الاتصال بالخادم: ' + (err.message || 'حدث خطأ غير معروف'));
     }
   }
 
@@ -371,7 +394,7 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
     if (!selectedUnit || !targetFloorId) return;
     const res = await fetch(`/api/units/${selectedUnit.id}/move`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ floorId: targetFloorId }) });
     if (res.ok) { setShowMoveUnit(false); setSelectedUnit(null); onRefresh(); }
-    else { const data = await res.json(); alert(data.error || 'حدث خطأ'); }
+    else { const data = await res.json(); toast.error(data.error || 'حدث خطأ أثناء نقل الوحدة'); }
   }
 
   const startEditUnit = (unit: UnitData) => {
@@ -407,7 +430,7 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
 
         {showAddFloor && (
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
-            {floorError && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{floorError}</div>}
+            {floorError && <Alert className="mb-3" title="تعذر الحفظ">{floorError}</Alert>}
             <form onSubmit={createFloor} className="flex gap-2">
               <input value={floorForm.name} onChange={(e) => setFloorForm({ name: e.target.value })} placeholder="اسم الطابق *" className="input-premium flex-1" required />
               <button type="submit" className="btn-primary text-sm">حفظ</button>
@@ -418,7 +441,7 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
 
         {showEditFloor && (
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-soft">
-            {floorError && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{floorError}</div>}
+            {floorError && <Alert className="mb-3" title="تعذر الحفظ">{floorError}</Alert>}
             <form onSubmit={updateFloor} className="flex gap-2">
               <input value={floorForm.name} onChange={(e) => setFloorForm({ name: e.target.value })} placeholder="اسم الطابق *" className="input-premium flex-1" required />
               <button type="submit" className="btn-primary text-sm">تحديث</button>
@@ -440,7 +463,7 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
                 </div>
                 <button onClick={() => { setShowAddUnit(false); setUnitError(''); }} className="rounded-full p-1.5 text-white/80 hover:text-white hover:bg-white/20 transition-colors"><X className="h-5 w-5" /></button>
               </div>
-              {unitError && <div className="px-6 py-2.5 bg-red-50 border-b border-red-100 text-sm text-red-700 flex items-center gap-2 shrink-0"><span className="inline-block h-2 w-2 rounded-full bg-red-500"></span>{unitError}</div>}
+              {unitError && <Alert className="rounded-none border-0 border-b" title="تعذر الحفظ">{unitError}</Alert>}
               <form onSubmit={createUnit} className="flex flex-col flex-1 overflow-hidden">
                 <div className="overflow-y-auto p-6 space-y-5 flex-1">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -555,7 +578,7 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
                 {isExpanded && (
                   <div className="px-4 py-2 space-y-1">
                     {floorUnits.length === 0 ? (
-                      <div className="py-4 text-center text-sm text-slate-400">لا توجد وحدات في هذا الطابق</div>
+                      <EmptyStateMessage className="py-4" title="لا توجد وحدات" description="لا توجد وحدات في هذا الطابق." />
                     ) : (
                       floorUnits.map((u) => (
                         <div
@@ -622,7 +645,7 @@ function FloorsUnitsTab({ building, onRefresh }: { building: BuildingData; onRef
                   </div>
                   <button onClick={() => { setShowEditUnit(false); setEditingUnitId(null); setUnitError(''); }} className="rounded-full p-1.5 text-white/80 hover:text-white hover:bg-white/20 transition-colors"><X className="h-5 w-5" /></button>
                 </div>
-                {unitError && <div className="px-6 py-2.5 bg-red-50 border-b border-red-100 text-sm text-red-700 flex items-center gap-2 shrink-0"><span className="inline-block h-2 w-2 rounded-full bg-red-500"></span>{unitError}</div>}
+                {unitError && <Alert className="rounded-none border-0 border-b" title="تعذر الحفظ">{unitError}</Alert>}
                 <form onSubmit={updateUnit} className="flex flex-col flex-1 overflow-hidden">
                   <div className="overflow-y-auto p-6 space-y-5 flex-1">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -786,7 +809,7 @@ function TenantsTab({ tenants }: { tenants: TenantData[] }) {
                 </tr>
               );
             })}
-            {tenants.length === 0 && <tr><td colSpan={4} className="py-8 text-center text-sm text-slate-500">لا يوجد مستأجرون</td></tr>}
+            {tenants.length === 0 && <tr><td colSpan={4}><EmptyStateMessage className="py-8" title="لا يوجد مستأجرون" description="لا يوجد مستأجرون مسجلون في هذا المبنى." /></td></tr>}
           </tbody>
         </table>
       </div>
@@ -827,7 +850,7 @@ function ContractsTab({ contracts }: { contracts: ContractData[] }) {
                   <td className="px-4 py-3"><span className="text-xs font-medium text-emerald-600">{c.status === 'active' ? 'نشط' : 'مسودة'}</span></td>
                 </tr>
               ))}
-              {currentContracts.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-sm text-slate-500">لا توجد عقود حالية</td></tr>}
+              {currentContracts.length === 0 && <tr><td colSpan={6}><EmptyStateMessage className="py-8" title="لا توجد عقود" description="لا توجد عقود حالية في هذا المبنى." /></td></tr>}
             </tbody>
           </table>
         </div>
@@ -915,7 +938,7 @@ function ReportsTab({ building, stats }: { building: BuildingData; stats: any })
               <span className="text-sm font-bold text-slate-900 w-8 text-left">{s.value}</span>
             </div>
           ))}
-          {statusData.length === 0 && <div className="py-4 text-center text-sm text-slate-400">لا توجد وحدات</div>}
+          {statusData.length === 0 && <EmptyStateMessage className="py-4" title="لا توجد وحدات" description="لا توجد وحدات في هذا المبنى." />}
         </div>
       </div>
 

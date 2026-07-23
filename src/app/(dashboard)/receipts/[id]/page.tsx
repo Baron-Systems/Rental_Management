@@ -5,6 +5,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, User, Building2, Home, Calendar, Banknote, Printer, Trash2, FileText, StickyNote } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
 
 interface ReceiptDetail {
   id: string;
@@ -20,6 +23,8 @@ interface ReceiptDetail {
 
 export default function ReceiptDetailPage() {
   const { id } = useParams();
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -32,18 +37,24 @@ export default function ReceiptDetailPage() {
 
   async function handleDelete() {
     if (!receipt) return;
-    if (!confirm('هل أنت متأكد من حذف سند القبض؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف سند القبض',
+      description: 'سيتم حذف سند القبض نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/receipts/${id}`, { method: 'DELETE' });
     if (res.ok) {
       window.location.href = '/receipts';
     } else {
       const d = await res.json();
-      alert(d.error || 'حدث خطأ');
+      toast.error(d.error || 'حدث خطأ أثناء حذف سند القبض');
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
-  if (!receipt) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">السند غير موجود</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات السند..." />;
+  if (!receipt) return <EmptyStateMessage title="السند غير موجود" description="تعذر العثور على بيانات سند القبض المطلوب." />;
 
   return (
     <div className="space-y-6 animate-fade-in">

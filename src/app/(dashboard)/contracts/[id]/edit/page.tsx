@@ -5,7 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Printer, Eye, Edit3, ArrowRight } from 'lucide-react';
 import { getFrequencyMonths, getFrequencyCount } from '@/lib/utils';
+import { LoadingState } from '@/components/ui/StatusMessage';
 import { ContractDocument, type ContractFormData, type TenantOption, type BuildingOption, type FloorOption, type UnitOption, type DueRow } from '@/components/contract/ContractDocument';
+import { Alert } from '@/components/ui/Alert';
 import { ContractSummary } from '@/components/contract/ContractSummary';
 
 export default function EditContractPage() {
@@ -136,7 +138,7 @@ export default function EditContractPage() {
     setTimeout(() => window.print(), 300);
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات العقد..." />;
 
   return (
     <div className="min-h-screen bg-slate-100 print:bg-white">
@@ -169,7 +171,7 @@ export default function EditContractPage() {
 
       {errors.general && (
         <div className="mx-auto max-w-7xl px-4 pt-4 print:hidden">
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errors.general}</div>
+          <Alert title="تعذر حفظ التعديل">{errors.general}</Alert>
         </div>
       )}
 

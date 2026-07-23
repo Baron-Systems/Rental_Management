@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Phone, FileText, Receipt, Wallet, AlertTriangle, User, Building2, Home, Calendar, ChevronLeft, Printer, Eye, Briefcase, Users } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
 
 interface TenantData {
   tenant: {
@@ -74,8 +75,8 @@ export default function TenantDetailPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
-  if (!data) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">المستأجر غير موجود</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات المستأجر..." />;
+  if (!data) return <EmptyStateMessage title="المستأجر غير موجود" description="تعذر العثور على بيانات المستأجر المطلوب." />;
 
   const t = data.tenant;
   const balance = data.balance;
@@ -173,7 +174,7 @@ export default function TenantDetailPage() {
                   <td className="px-4 py-3 text-xs font-bold text-slate-900">{formatCurrency(line.balance)}</td>
                 </tr>
               ))}
-              {data.statement.lines.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-sm text-slate-500">لا توجد حركات</td></tr>}
+              {data.statement.lines.length === 0 && <tr><td colSpan={6}><EmptyStateMessage className="py-8" title="لا توجد حركات" description="لا توجد حركات في كشف الحساب." /></td></tr>}
             </tbody>
           </table>
         </div>
@@ -210,7 +211,7 @@ export default function TenantDetailPage() {
                 </tr>
               ))}
               {t.contracts.length === 0 && (
-                <tr><td colSpan={5} className="py-8 text-center text-sm text-slate-500">لا توجد عقود</td></tr>
+                <tr><td colSpan={5}><EmptyStateMessage className="py-8" title="لا توجد عقود" description="لا توجد عقود مسجلة لهذا المستأجر." /></td></tr>
               )}
             </tbody>
           </table>

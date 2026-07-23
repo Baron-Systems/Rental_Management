@@ -29,6 +29,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn, setCurrency } from '@/lib/utils';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
 
 const navItems = [
   { href: '/dashboard', label: 'لوحة التحكم', icon: BarChart3 },
@@ -314,14 +315,9 @@ export function DashboardLayout({
                   </div>
                   <div className="max-h-[60vh] overflow-y-auto">
                     {loadingNotifications ? (
-                      <div className="flex items-center justify-center py-8 text-sm text-slate-500">
-                        جاري التحميل...
-                      </div>
+                      <LoadingState className="py-8" message="جاري تحميل الإشعارات..." />
                     ) : notifications.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center gap-2 py-8 text-slate-400">
-                        <BellRing className="h-8 w-8" />
-                        <p className="text-sm">لا توجد إشعارات</p>
-                      </div>
+                      <EmptyStateMessage className="py-8" title="لا توجد إشعارات" description="ستظهر هنا التنبيهات المهمة عند توفرها." />
                     ) : (
                       <div className="divide-y divide-slate-50">
                         {notifications.map((n) => (

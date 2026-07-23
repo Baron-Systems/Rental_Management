@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface ContractData {
   contract: {
@@ -53,7 +54,7 @@ export default function PrintContractPage() {
     if (data) setTimeout(() => window.print(), 500);
   }, [data]);
 
-  if (!data?.contract) return <div className="p-8 text-center">جاري التحميل...</div>;
+  if (!data?.contract) return <LoadingState className="min-h-screen" message="جاري تحميل العقد..." />;
 
   const c = data.contract;
 

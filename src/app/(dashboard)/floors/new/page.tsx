@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Alert } from '@/components/ui/Alert';
 
 interface Building { id: string; name: string; }
 
@@ -28,7 +29,7 @@ export default function NewFloorPage() {
     <div className="mx-auto max-w-2xl space-y-4">
       <h2 className="text-xl font-bold">طابق جديد</h2>
       <form onSubmit={handleSubmit} className="rounded-lg bg-white p-6 shadow-sm">
-        {error && <div className="mb-4 text-sm text-red-600">{error}</div>}
+        {error && <Alert className="mb-4" title="تعذر الحفظ">{error}</Alert>}
         <div className="grid grid-cols-1 gap-4">
           <select value={formData.buildingId} onChange={(e) => setFormData({ ...formData, buildingId: e.target.value })} className="rounded-md border px-3 py-2 text-sm" required>
             <option value="">اختر العمارة *</option>

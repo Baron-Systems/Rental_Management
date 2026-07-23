@@ -7,6 +7,11 @@ import {
   Save, LogOut, Lock, Settings as SettingsIcon, Repeat, Upload, X, Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { Alert } from '@/components/ui/Alert';
+import { EmptyStateMessage } from '@/components/ui/StatusMessage';
+import { useToast } from '@/components/ui/ToastProvider';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface DueType {
   id: string;
@@ -85,6 +90,8 @@ const sectionTabs = [
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [settings, setSettings] = useState<SettingsData>(defaultSettings);
   const [dueTypes, setDueTypes] = useState<DueType[]>([]);
   const [paymentFrequencies, setPaymentFrequencies] = useState<PaymentFrequency[]>(defaultPaymentFrequencies);
@@ -158,8 +165,14 @@ export default function SettingsPage() {
     setPaymentFrequencies((prev) => prev.map((f, i) => i === index ? { ...f, [field]: value } : f));
   }
 
-  function deletePaymentFrequency(index: number) {
-    if (!confirm('هل أنت متأكد من حذف هذه الدورية؟')) return;
+  async function deletePaymentFrequency(index: number) {
+    const confirmed = await confirm({
+      title: 'حذف دورية الدفع',
+      description: 'هل أنت متأكد من حذف هذه الدورية؟',
+      variant: 'warning',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     setPaymentFrequencies((prev) => prev.filter((_, i) => i !== index));
   }
 
@@ -179,11 +192,17 @@ export default function SettingsPage() {
   }
 
   async function deleteDueType(id: string) {
-    if (!confirm('هل أنت متأكد من حذف هذا النوع؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف نوع الالتزام',
+      description: 'هل أنت متأكد من حذف هذا النوع؟',
+      variant: 'warning',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/settings/due-types/${id}`, { method: 'DELETE' });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      alert(data.error || 'فشل الحذف');
+      toast.error(data.error || 'فشل حذف نوع الالتزام');
       return;
     }
     loadDueTypes();
@@ -218,7 +237,7 @@ export default function SettingsPage() {
     router.push('/login');
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل الإعدادات..." />;
 
   return (
     <div className="animate-fade-in max-w-6xl mx-auto">
@@ -315,7 +334,7 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
-                {paymentFrequencies.length === 0 && <div className="text-center py-8 text-sm text-slate-500">لا توجد دوريات محددة</div>}
+                {paymentFrequencies.length === 0 && <EmptyStateMessage className="py-8" title="لا توجد دوريات محددة" description="لم يتم إضافة أي دوريات دفع." />}
               </div>
             </div>
           )}
@@ -344,7 +363,7 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
-                {dueTypes.length === 0 && <div className="text-center py-8 text-sm text-slate-500">لا توجد أنواع التزامات</div>}
+                {dueTypes.length === 0 && <EmptyStateMessage className="py-8" title="لا توجد أنواع التزامات" description="لم يتم إضافة أي أنواع التزامات." />}
               </div>
             </div>
           )}
@@ -356,8 +375,8 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 gap-4 max-w-md">
                   <Field label="البريد الإلكتروني الجديد" type="email" value={changeEmail.newEmail} onChange={(v: string) => setChangeEmail((p) => ({ ...p, newEmail: v }))} placeholder="example@email.com" />
                   <Field label="كلمة المرور" type="password" value={changeEmail.password} onChange={(v: string) => setChangeEmail((p) => ({ ...p, password: v }))} placeholder="********" />
-                  {emailError && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{emailError}</div>}
-                  {emailSuccess && <div className="text-sm text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">{emailSuccess}</div>}
+                  {emailError && <Alert title="تعذر تغيير البريد الإلكتروني">{emailError}</Alert>}
+                  {emailSuccess && <Alert variant="success" title="تم بنجاح">{emailSuccess}</Alert>}
                   <button onClick={handleChangeEmail} className="btn-primary">تغيير البريد الإلكتروني</button>
                 </div>
               </div>
@@ -367,8 +386,8 @@ export default function SettingsPage() {
                   <Field label="كلمة المرور الحالية" type="password" value={changePassword.current} onChange={(v: string) => setChangePassword((p) => ({ ...p, current: v }))} placeholder="********" />
                   <Field label="كلمة المرور الجديدة" type="password" value={changePassword.new} onChange={(v: string) => setChangePassword((p) => ({ ...p, new: v }))} placeholder="********" />
                   <Field label="تأكيد كلمة المرور الجديدة" type="password" value={changePassword.confirm} onChange={(v: string) => setChangePassword((p) => ({ ...p, confirm: v }))} placeholder="********" />
-                  {passwordError && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{passwordError}</div>}
-                  {passwordSuccess && <div className="text-sm text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">{passwordSuccess}</div>}
+                  {passwordError && <Alert title="تعذر تغيير كلمة المرور">{passwordError}</Alert>}
+                  {passwordSuccess && <Alert variant="success" title="تم بنجاح">{passwordSuccess}</Alert>}
                   <button onClick={handleChangePassword} className="btn-primary">تغيير كلمة المرور</button>
                 </div>
               </div>

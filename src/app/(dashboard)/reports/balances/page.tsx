@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LoadingState } from '@/components/ui/StatusMessage';
 import Link from 'next/link';
 
 interface BalanceRow {
@@ -25,7 +26,7 @@ export default function BalancesReportPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-center">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل تقرير الأرصدة..." />;
 
   return (
     <div className="space-y-4">

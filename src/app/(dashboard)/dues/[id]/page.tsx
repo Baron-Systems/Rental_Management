@@ -5,6 +5,10 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, FileText, Tag, User, Building2, Home, Calendar, Banknote, XCircle, Printer, AlertTriangle, StickyNote, Pencil, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
+import { Alert } from '@/components/ui/Alert';
 
 interface DueDetail {
   id: string;
@@ -38,6 +42,8 @@ function getTemporalStatus(due: DueDetail): { label: string; style: string } {
 
 export default function DueDetailPage() {
   const { id } = useParams();
+  const { confirm, prompt: promptDialog } = useDialog();
+  const toast = useToast();
   const [due, setDue] = useState<DueDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -61,7 +67,13 @@ export default function DueDetailPage() {
 
   async function handleCancel() {
     if (!due) return;
-    const reason = prompt('سبب الإلغاء:');
+    const reason = await promptDialog({
+      title: 'إلغاء الالتزام',
+      description: 'أدخل سبب إلغاء هذا الالتزام.',
+      inputLabel: 'سبب الإلغاء',
+      inputPlaceholder: 'مثال: تم السداد مبكراً',
+      variant: 'warning',
+    });
     if (!reason) return;
     console.log('[DUE CANCEL FE] dueId:', id, 'reason:', reason);
     const res = await fetch(`/api/dues/${id}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
@@ -71,18 +83,24 @@ export default function DueDetailPage() {
     } else {
       const d = await res.json();
       console.error('[DUE CANCEL FE] error:', d);
-      alert(d.error || 'حدث خطأ');
+      toast.error(d.error || 'حدث خطأ أثناء إلغاء الالتزام');
     }
   }
 
   async function handleDelete() {
     if (!due) return;
-    if (!confirm('هل أنت متأكد من الحذف النهائي؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    const confirmed = await confirm({
+      title: 'حذف الالتزام',
+      description: 'سيتم حذف الالتزام نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/dues/${id}`, { method: 'DELETE' });
     if (res.ok) {
       window.location.href = '/dues';
     } else {
-      alert('حدث خطأ');
+      toast.error('حدث خطأ أثناء حذف الالتزام');
     }
   }
 
@@ -129,8 +147,8 @@ export default function DueDetailPage() {
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
-  if (!due) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">الالتزام غير موجود</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات الالتزام..." />;
+  if (!due) return <EmptyStateMessage title="الالتزام غير موجود" description="تعذر العثور على بيانات الالتزام المطلوب." />;
 
   const temporal = getTemporalStatus(due);
 
@@ -169,7 +187,7 @@ export default function DueDetailPage() {
 
       {editMode && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft animate-scale-in">
-          {editError && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{editError}</div>}
+          {editError && <Alert className="mb-4" title="تعذر حفظ التعديل">{editError}</Alert>}
           <form onSubmit={handleEditSubmit}>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <input type="date" value={editForm.dueDate} onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })} className="input-premium" required />

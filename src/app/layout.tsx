@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { DialogProvider } from '@/components/ui/DialogProvider';
+import { ToastProvider } from '@/components/ui/ToastProvider';
 
 export const metadata: Metadata = {
   title: 'نظام إدارة إيجارات العمارات',
@@ -14,7 +16,11 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className="min-h-screen bg-background">
-        {children}
+        <DialogProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </DialogProvider>
       </body>
     </html>
   );

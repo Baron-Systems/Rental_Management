@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface DueRow {
   id: string;
@@ -27,7 +28,7 @@ export default function DuesReportPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-center">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل تقرير الالتزامات..." />;
 
   const total = data.reduce((sum, d) => sum + Number(d.amount), 0);
 

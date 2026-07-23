@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ContractDocument, type ContractFormData, type TenantOption, type BuildingOption, type FloorOption, type UnitOption } from '@/components/contract/ContractDocument';
+import { Alert } from '@/components/ui/Alert';
 import { ContractSummary } from '@/components/contract/ContractSummary';
 import { PastContractDuesDialog } from '@/components/contract/PastContractDuesDialog';
 
@@ -166,7 +167,7 @@ export default function NewContractPage() {
     <div className="min-h-screen bg-slate-100 print:bg-white">
       {errors.general && (
         <div className="mx-auto max-w-7xl px-4 pt-4 print:hidden">
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errors.general}</div>
+          <Alert title="تعذر حفظ العقد">{errors.general}</Alert>
         </div>
       )}
 

@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { Eye, ChevronLeft, User, Building2, Home, Calendar, CalendarClock, Banknote, Repeat, XCircle, CheckCircle, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { PastContractDuesDialog } from '@/components/contract/PastContractDuesDialog';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
 
 interface ContractData {
   contract: {
@@ -71,6 +74,8 @@ const dueStatusStyles: Record<string, string> = {
 
 export default function ContractDetailPage() {
   const { id } = useParams();
+  const { confirm, prompt: promptDialog } = useDialog();
+  const toast = useToast();
   const [data, setData] = useState<ContractData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDuesDialog, setShowDuesDialog] = useState(false);
@@ -99,8 +104,8 @@ export default function ContractDetailPage() {
       .catch(() => {});
   }, [id]);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
-  if (!data?.contract) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">العقد غير موجود</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات العقد..." />;
+  if (!data?.contract) return <EmptyStateMessage title="العقد غير موجود" description="تعذر العثور على بيانات العقد المطلوب." />;
 
   const c = data.contract;
   const today = new Date();
@@ -121,10 +126,16 @@ export default function ContractDetailPage() {
       return;
     }
 
-    if (!confirm('هل أنت متأكد من اعتماد العقد؟')) return;
+    const approved = await confirm({
+      title: 'اعتماد العقد',
+      description: 'هل أنت متأكد من اعتماد هذا العقد؟ سيتم تفعيل المستحقات المرتبطة.',
+      variant: 'warning',
+      confirmLabel: 'اعتماد',
+    });
+    if (!approved) return;
     const res = await fetch(`/api/contracts/${id}/approve`, { method: 'POST' });
     if (res.ok) window.location.reload();
-    else { const d = await res.json(); alert(d.error || 'حدث خطأ'); }
+    else { const d = await res.json(); toast.error(d.error || 'حدث خطأ أثناء اعتماد العقد'); }
   }
 
   async function handleApproveWithDuesChoice(generateDues: boolean) {
@@ -138,20 +149,38 @@ export default function ContractDetailPage() {
     setIsProcessing(false);
     setShowDuesDialog(false);
     if (res.ok) window.location.reload();
-    else { const d = await res.json(); alert(d.error || 'حدث خطأ'); }
+    else { const d = await res.json(); toast.error(d.error || 'حدث خطأ أثناء اعتماد العقد'); }
   }
 
   async function handleDelete() {
-    if (!confirm('هل أنت متأكد من حذف العقد؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف العقد',
+      description: 'سيتم حذف العقد نهائيًا مع جميع بياناته. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/contracts/${id}`, { method: 'DELETE' });
     if (res.ok) window.location.href = '/contracts';
-    else { const d = await res.json(); alert(d.error || 'حدث خطأ'); }
+    else { const d = await res.json(); toast.error(d.error || 'حدث خطأ أثناء حذف العقد'); }
   }
 
   async function handleCancel() {
-    const reason = prompt('أدخل سبب إلغاء العقد:');
+    const reason = await promptDialog({
+      title: 'إلغاء العقد',
+      description: 'أدخل سبب إلغاء العقد بشكل موجز.',
+      inputLabel: 'سبب الإلغاء',
+      inputPlaceholder: 'مثال: اتفاق الطرفين',
+      variant: 'warning',
+    });
     if (!reason) return;
-    if (!confirm('هل أنت متأكد من إلغاء العقد؟')) return;
+    const confirmed = await confirm({
+      title: 'تأكيد الإلغاء',
+      description: 'هل أنت متأكد من إلغاء هذا العقد؟',
+      variant: 'warning',
+      confirmLabel: 'إلغاء',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/contracts/${id}/cancel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -161,7 +190,7 @@ export default function ContractDetailPage() {
       window.location.reload();
     } else {
       const d = await res.json();
-      alert(d.error || 'حدث خطأ');
+      toast.error(d.error || 'حدث خطأ أثناء إلغاء العقد');
     }
   }
 
@@ -291,7 +320,7 @@ export default function ContractDetailPage() {
                   <td className="px-4 py-3"><span className={`status-badge border ${dueStatusStyles[d.status] || dueStatusStyles.cancelled}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{dueStatusLabels[d.status] || d.status}</span></td>
                 </tr>
               ))}
-              {c.dues.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-sm text-slate-500">لا توجد التزامات</td></tr>}
+              {c.dues.length === 0 && <tr><td colSpan={5}><EmptyStateMessage className="py-8" title="لا توجد التزامات" description="لم يتم إنشاء التزامات لهذا العقد." /></td></tr>}
             </tbody>
           </table>
         </div>
@@ -314,7 +343,7 @@ export default function ContractDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-sm text-slate-500">لا توجد صور مرفقة</div>
+            <EmptyStateMessage className="py-8" title="لا توجد صور مرفقة" description="لم يتم إرفاق أي صور بهذا العقد." />
           )}
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface DueDetail {
   dueNumber: string;
@@ -50,7 +51,7 @@ export default function PrintDuePage() {
     if (due) setTimeout(() => window.print(), 500);
   }, [due]);
 
-  if (!due) return <div className="min-h-screen p-10 text-center text-sm text-slate-500">جاري التحميل...</div>;
+  if (!due) return <LoadingState className="min-h-screen" message="جاري تحميل سند الالتزام..." />;
 
   const d = due;
   const meter = isMeterDue(d);

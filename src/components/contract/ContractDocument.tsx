@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { InlineField } from './InlineField';
 import { cn, formatCurrency, formatDate, getFrequencyMonths, calculateContractDueSchedule } from '@/lib/utils';
 import { AlertTriangle, Building2, Zap, Droplets } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
 
 export const unitTypeLabels: Record<string, string> = {
   apartment: 'شقة', shop: 'محل', office: 'مكتب', warehouse: 'مستودع',
@@ -353,9 +354,7 @@ export function ContractDocument({
       {warnings.length > 0 && !isPreview && (
         <div className="mb-4 space-y-1">
           {warnings.map((w, i) => (
-            <div key={i} className="flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-700">
-              <AlertTriangle className="h-4 w-4 shrink-0" /> {w}
-            </div>
+            <Alert key={i} variant="warning" title="تنبيه">{w}</Alert>
           ))}
         </div>
       )}

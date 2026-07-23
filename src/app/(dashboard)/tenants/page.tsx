@@ -9,6 +9,8 @@ import {
 import { PageSkeleton } from '@/components/ui/SkeletonCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatCurrency } from '@/lib/utils';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface Tenant {
   id: string;
@@ -23,6 +25,8 @@ interface Tenant {
 
 export default function TenantsPage() {
   const router = useRouter();
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -40,12 +44,18 @@ export default function TenantsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف المستأجر',
+      description: 'سيتم حذف بيانات المستأجر. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/tenants/${id}`, { method: 'DELETE' });
     if (res.ok) loadTenants();
     else {
       const data = await res.json();
-      alert(data.error || 'حدث خطأ');
+      toast.error(data.error || 'حدث خطأ أثناء حذف المستأجر');
     }
   }
 

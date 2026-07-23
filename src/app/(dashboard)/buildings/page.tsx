@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { Plus, Eye, Pencil, Trash2, Search, Building2, MapPin, Layers, Home, TrendingUp, Banknote, Receipt, DollarSign, SlidersHorizontal } from 'lucide-react';
 import { PageSkeleton } from '@/components/ui/SkeletonCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { Alert } from '@/components/ui/Alert';
 
 interface Building {
   id: string;
@@ -22,6 +25,8 @@ interface Building {
 }
 
 export default function BuildingsPage() {
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -64,12 +69,18 @@ export default function BuildingsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف العمارة',
+      description: 'سيتم حذف العمارة نهائيًا مع جميع بياناتها. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/buildings/${id}`, { method: 'DELETE' });
     if (res.ok) loadBuildings();
     else {
       const data = await res.json();
-      alert(data.error || 'حدث خطأ');
+      toast.error(data.error || 'حدث خطأ أثناء حذف العمارة');
     }
   }
 
@@ -119,7 +130,7 @@ export default function BuildingsPage() {
       {/* Quick Form */}
       {showForm && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft animate-scale-in">
-          {error && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && <Alert className="mb-4" title="تعذر حفظ العمارة">{error}</Alert>}
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <input

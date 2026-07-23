@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { PageSkeleton } from '@/components/ui/SkeletonCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatCurrency } from '@/lib/utils';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { Alert } from '@/components/ui/Alert';
 
 interface Receipt {
   id: string;
@@ -19,6 +22,8 @@ interface Receipt {
 const paymentMethodLabels: Record<string, string> = { cash: 'نقداً', cheque: 'شيك' };
 
 export default function ReceiptsPage() {
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -39,10 +44,16 @@ export default function ReceiptsPage() {
     else { const data = await res.json(); console.error('[Receipts Form] Error response:', data); setError(data.error || 'حدث خطأ'); }
   }
   async function handleDelete(id: string) {
-    if (!confirm('هل أنت متأكد من حذف سند القبض؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف سند القبض',
+      description: 'سيتم حذف سند القبض نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/receipts/${id}`, { method: 'DELETE' });
     if (res.ok) loadReceipts();
-    else alert('حدث خطأ');
+    else toast.error('حدث خطأ أثناء حذف سند القبض');
   }
 
   const filtered = useMemo(() => {
@@ -86,7 +97,7 @@ export default function ReceiptsPage() {
 
       {showForm && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft animate-scale-in">
-          {error && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && <Alert className="mb-4" title="تعذر الحفظ">{error}</Alert>}
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <select value={formData.tenantId} onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })} className="select-premium" required>

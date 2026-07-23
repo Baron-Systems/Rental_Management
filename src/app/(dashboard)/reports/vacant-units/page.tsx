@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface UnitRow {
   id: string;
@@ -22,7 +23,7 @@ export default function VacantUnitsReportPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-center">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل تقرير الوحدات الشاغرة..." />;
 
   return (
     <div className="space-y-4">

@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { PageSkeleton } from '@/components/ui/SkeletonCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatCurrency } from '@/lib/utils';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { Alert } from '@/components/ui/Alert';
 
 interface Due {
   id: string;
@@ -48,6 +51,8 @@ function getTemporalStatus(d: Due): { label: string; style: string } {
 }
 
 export default function DuesPage() {
+  const { confirm, prompt: promptDialog } = useDialog();
+  const toast = useToast();
   const [dues, setDues] = useState<Due[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -120,20 +125,33 @@ export default function DuesPage() {
   }
 
   async function handleCancel(id: string) {
-    const reason = prompt('أدخل سبب الإلغاء:'); if (!reason) return;
+    const reason = await promptDialog({
+      title: 'إلغاء الالتزام',
+      description: 'أدخل سبب إلغاء هذا الالتزام.',
+      inputLabel: 'سبب الإلغاء',
+      inputPlaceholder: 'مثال: تم السداد مبكراً',
+      variant: 'warning',
+    });
+    if (!reason) return;
     const res = await fetch(`/api/dues/${id}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }) });
     if (res.ok) {
       loadDues();
     } else {
       const d = await res.json().catch(() => ({}));
-      alert(d.error + (d.detail ? ' - ' + d.detail : '') || 'حدث خطأ');
+      toast.error(d.error + (d.detail ? ' - ' + d.detail : '') || 'حدث خطأ أثناء إلغاء الالتزام');
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('هل أنت متأكد من الحذف النهائي؟ لا يمكن التراجع عن هذا الإجراء.')) return;
+    const confirmed = await confirm({
+      title: 'حذف الالتزام',
+      description: 'سيتم حذف الالتزام نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/dues/${id}`, { method: 'DELETE' });
-    if (res.ok) loadDues(); else alert('حدث خطأ');
+    if (res.ok) loadDues(); else toast.error('حدث خطأ أثناء حذف الالتزام');
   }
 
   function startEdit(d: Due) {
@@ -224,7 +242,7 @@ export default function DuesPage() {
 
       {showForm && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft animate-scale-in">
-          {error && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+          {error && <Alert className="mb-4" title="تعذر حفظ الالتزام">{error}</Alert>}
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <select value={formData.tenantId} onChange={async (e) => { const tenantId = e.target.value; setFormData({ ...formData, tenantId, unitId: '', previousMeterReading: '', currentMeterReading: '', meterConsumption: '', unitPrice: '', amount: '' }); if (tenantId) { const units = await loadUnitsForTenant(tenantId); setFormUnits(units); } else { setFormUnits([]); } }} className="select-premium" required>
@@ -281,7 +299,7 @@ export default function DuesPage() {
 
       {editId && (
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-soft animate-scale-in">
-          {editError && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{editError}</div>}
+          {editError && <Alert className="mb-4" title="تعذر حفظ التعديل">{editError}</Alert>}
           <form onSubmit={handleEditSubmit}>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">

@@ -5,6 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Home, Building2, Layers, Tag, Ruler, BedDouble, Bath, Zap, Droplets, Banknote, Pencil, Trash2, User, Calendar, CalendarClock, FileText } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
 
 interface UnitData {
   id: string;
@@ -48,6 +51,8 @@ const contractStatusStyles: Record<string, string> = {
 export default function UnitDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [unit, setUnit] = useState<UnitData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -58,8 +63,8 @@ export default function UnitDetailPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
-  if (!unit) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">الوحدة غير موجودة</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات الوحدة..." />;
+  if (!unit) return <EmptyStateMessage title="الوحدة غير موجودة" description="تعذر العثور على بيانات الوحدة المطلوبة." />;
 
   const activeContract = unit.contracts.find((c) => c.status === 'active');
 
@@ -102,13 +107,17 @@ export default function UnitDetailPage() {
           <div className="flex gap-2">
             <Link href={`/buildings/${unit.building.id}`} className="btn-secondary"><Pencil className="h-4 w-4" /> تعديل في العمارة</Link>
             <button
-              onClick={() => {
-                if (confirm('هل أنت متأكد من الحذف؟')) {
-                  fetch(`/api/units/${id}`, { method: 'DELETE' }).then((res) => {
-                    if (res.ok) router.push('/units');
-                    else res.json().then((d) => alert(d.error || 'حدث خطأ'));
-                  });
-                }
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: 'حذف الوحدة',
+                  description: 'سيتم حذف الوحدة نهائيًا. لا يمكن التراجع عن هذا الإجراء.',
+                  variant: 'danger',
+                  confirmLabel: 'حذف',
+                });
+                if (!confirmed) return;
+                const res = await fetch(`/api/units/${id}`, { method: 'DELETE' });
+                if (res.ok) router.push('/units');
+                else { const d = await res.json(); toast.error(d.error || 'حدث خطأ أثناء حذف الوحدة'); }
               }}
               className="btn-secondary text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
             >
@@ -176,7 +185,7 @@ export default function UnitDetailPage() {
                   <td className="px-4 py-3"><span className={`status-badge border ${contractStatusStyles[c.status] || contractStatusStyles.draft}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{contractStatusLabels[c.status] || c.status}</span></td>
                 </tr>
               ))}
-              {unit.contracts.length === 0 && <tr><td colSpan={4} className="py-8 text-center text-sm text-slate-500">لا توجد عقود</td></tr>}
+              {unit.contracts.length === 0 && <tr><td colSpan={4}><EmptyStateMessage className="py-8" title="لا توجد عقود" description="لا توجد عقود مسجلة لهذه الوحدة." /></td></tr>}
             </tbody>
           </table>
         </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
 
 interface StatementLine {
   id: string;
@@ -58,8 +59,8 @@ export default function TenantPrintPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="text-center p-10 text-sm text-slate-500">جاري التحميل...</div>;
-  if (!data) return <div className="text-center p-10 text-sm text-slate-500">المستأجر غير موجود</div>;
+  if (loading) return <LoadingState className="min-h-screen" message="جاري تحميل كشف الحساب..." />;
+  if (!data) return <EmptyStateMessage className="min-h-screen" title="المستأجر غير موجود" description="تعذر العثور على بيانات المستأجر المطلوب." />;
 
   const { tenant, contract, statement, reportDate } = data;
 
@@ -120,7 +121,7 @@ export default function TenantPrintPage() {
           ))}
           {statement.lines.length === 0 && (
             <tr>
-              <td colSpan={6} className="py-8 text-center text-slate-500">لا توجد حركات</td>
+              <td colSpan={6}><EmptyStateMessage className="py-8" title="لا توجد حركات" description="لا توجد حركات في كشف الحساب." /></td>
             </tr>
           )}
         </tbody>

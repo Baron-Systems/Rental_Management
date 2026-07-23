@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { formatCurrency } from '@/lib/utils';
 import { ContractAttachmentsModal } from '@/components/contract/ContractAttachmentsModal';
 import { PastContractDuesDialog } from '@/components/contract/PastContractDuesDialog';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
 
 interface Contract {
   id: string;
@@ -50,6 +52,8 @@ const frequencyLabels: Record<string, string> = {
 };
 
 export default function ContractsPage() {
+  const { confirm, prompt: promptDialog } = useDialog();
+  const toast = useToast();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -110,10 +114,16 @@ export default function ContractsPage() {
       return;
     }
 
-    if (!confirm('هل أنت متأكد من اعتماد العقد؟')) return;
+    const approved = await confirm({
+      title: 'اعتماد العقد',
+      description: 'هل أنت متأكد من اعتماد هذا العقد؟ سيتم تفعيل المستحقات المرتبطة به.',
+      variant: 'warning',
+      confirmLabel: 'اعتماد',
+    });
+    if (!approved) return;
     const res = await fetch(`/api/contracts/${id}/approve`, { method: 'POST' });
     if (res.ok) loadContracts();
-    else { const data = await res.json(); alert(data.error || 'حدث خطأ'); }
+    else { const data = await res.json(); toast.error(data.error || 'حدث خطأ أثناء اعتماد العقد'); }
   }
 
   async function handleApproveWithDuesChoice(generateDues: boolean) {
@@ -128,27 +138,45 @@ export default function ContractsPage() {
     setShowDuesDialog(false);
     setPendingContractId(null);
     if (res.ok) loadContracts();
-    else { const data = await res.json(); alert(data.error || 'حدث خطأ'); }
+    else { const data = await res.json(); toast.error(data.error || 'حدث خطأ أثناء اعتماد العقد'); }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('هل أنت متأكد من الحذف؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف العقد',
+      description: 'سيتم حذف العقد نهائيًا مع جميع بياناته. لا يمكن التراجع عن هذا الإجراء.',
+      variant: 'danger',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/contracts/${id}`, { method: 'DELETE' });
     if (res.ok) loadContracts();
-    else { const data = await res.json(); alert(data.error || 'حدث خطأ'); }
+    else { const data = await res.json(); toast.error(data.error || 'حدث خطأ أثناء حذف العقد'); }
   }
 
   async function handleCancel(id: string) {
-    const reason = prompt('أدخل سبب إلغاء العقد:');
+    const reason = await promptDialog({
+      title: 'إلغاء العقد',
+      description: 'أدخل سبب إلغاء العقد بشكل موجز.',
+      inputLabel: 'سبب الإلغاء',
+      inputPlaceholder: 'مثال: اتفاق الطرفين',
+      variant: 'warning',
+    });
     if (!reason) return;
-    if (!confirm('هل أنت متأكد من إلغاء العقد؟')) return;
+    const confirmed = await confirm({
+      title: 'تأكيد الإلغاء',
+      description: 'هل أنت متأكد من إلغاء هذا العقد؟',
+      variant: 'warning',
+      confirmLabel: 'إلغاء',
+    });
+    if (!confirmed) return;
     const res = await fetch(`/api/contracts/${id}/cancel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason }),
     });
     if (res.ok) loadContracts();
-    else { const data = await res.json(); alert(data.error || 'حدث خطأ'); }
+    else { const data = await res.json(); toast.error(data.error || 'حدث خطأ أثناء إلغاء العقد'); }
   }
 
   const filtered = useMemo(() => {

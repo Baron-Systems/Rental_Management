@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface ReceiptRow {
   id: string;
@@ -22,7 +23,7 @@ export default function ReceiptsReportPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-center">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل تقرير سندات القبض..." />;
 
   const total = data.reduce((sum, r) => sum + Number(r.amount), 0);
 

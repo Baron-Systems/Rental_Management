@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, User, Phone, Users, StickyNote, Save, X } from 'lucide-react';
 import Link from 'next/link';
+import { Alert } from '@/components/ui/Alert';
 
 export default function NewTenantPage() {
   const router = useRouter();
@@ -39,11 +40,7 @@ export default function NewTenantPage() {
       <h1 className="text-2xl font-bold tracking-tight text-slate-900">مستأجر جديد</h1>
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-soft">
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        {error && <Alert className="mb-4" title="تعذر حفظ المستأجر">{error}</Alert>}
 
         <div className="space-y-6">
           {/* Basic Info */}

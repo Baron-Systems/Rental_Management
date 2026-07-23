@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Zap, Droplets, FileText, AlertTriangle, ChevronLeft, Home, User, Building2 } from 'lucide-react';
+import { Alert } from '@/components/ui/Alert';
 
 interface Contract { id: string; contractNumber: string; tenant: { fullName: string }; unit: { unitNumber: string }; building: { name: string }; }
 
@@ -94,12 +95,7 @@ export default function EvictContractPage() {
           </div>
 
           <div className="px-5 py-5 space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                {error}
-              </div>
-            )}
+            {error && <Alert className="mb-4" title="تعذر حفظ الإخلاء">{error}</Alert>}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">

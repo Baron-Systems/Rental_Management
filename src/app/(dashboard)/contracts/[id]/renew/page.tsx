@@ -5,7 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Printer, Eye, Edit3 } from 'lucide-react';
 import { getFrequencyMonths, getFrequencyCount } from '@/lib/utils';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
 import { ContractDocument, type ContractFormData, type TenantOption, type BuildingOption, type FloorOption, type UnitOption } from '@/components/contract/ContractDocument';
+import { Alert } from '@/components/ui/Alert';
 import { ContractSummary } from '@/components/contract/ContractSummary';
 
 export default function RenewContractPage() {
@@ -156,8 +158,8 @@ export default function RenewContractPage() {
     setTimeout(() => window.print(), 300);
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
-  if (!previousContract) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">العقد غير موجود</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات العقد..." />;
+  if (!previousContract) return <EmptyStateMessage title="العقد غير موجود" description="تعذر العثور على بيانات العقد المطلوب." />;
 
   return (
     <div className="min-h-screen bg-slate-100 print:bg-white">
@@ -190,7 +192,7 @@ export default function RenewContractPage() {
 
       {errors.general && (
         <div className="mx-auto max-w-7xl px-4 pt-4 print:hidden">
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errors.general}</div>
+          <Alert title="تعذر حفظ التجديد">{errors.general}</Alert>
         </div>
       )}
 

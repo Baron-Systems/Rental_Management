@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { PageSkeleton } from '@/components/ui/SkeletonCard';
+import { ErrorState } from '@/components/ui/StatusMessage';
 import { formatCurrency } from '@/lib/utils';
 
 interface DashboardStats {
@@ -95,7 +96,7 @@ export default function DashboardPage() {
   }, []);
 
   if (loading) return <PageSkeleton />;
-  if (!stats) return <div className="py-20 text-center text-slate-500">حدث خطأ أثناء تحميل البيانات</div>;
+  if (!stats) return <ErrorState className="py-20" message="تعذر تحميل لوحة التحكم" onRetry={() => window.location.reload()} />;
 
   const kpiCards = [
     {

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Building2, MapPin, Save, X } from 'lucide-react';
+import { LoadingState } from '@/components/ui/StatusMessage';
+import { Alert } from '@/components/ui/Alert';
 
 export default function EditBuildingPage() {
   const { id } = useParams();
@@ -43,7 +45,7 @@ export default function EditBuildingPage() {
     }
   }
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل بيانات العمارة..." />;
 
   const inputClass = 'input-premium w-full';
 
@@ -55,9 +57,7 @@ export default function EditBuildingPage() {
       <h1 className="text-2xl font-bold tracking-tight text-slate-900">تعديل العمارة</h1>
 
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-soft">
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-        )}
+        {error && <Alert className="mb-4" title="تعذر حفظ التغييرات">{error}</Alert>}
 
         <div className="space-y-6">
           <div>

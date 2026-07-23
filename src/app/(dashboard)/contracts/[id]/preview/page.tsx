@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Printer } from 'lucide-react';
 import { getFrequencyMonths, getFrequencyCount } from '@/lib/utils';
+import { LoadingState } from '@/components/ui/StatusMessage';
 import { ContractDocument, type ContractFormData, type TenantOption, type BuildingOption, type FloorOption, type UnitOption, type DueRow } from '@/components/contract/ContractDocument';
 
 export default function PreviewContractPage() {
@@ -111,9 +112,7 @@ export default function PreviewContractPage() {
     setTimeout(() => { w.print(); w.close(); }, 300);
   }
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64 text-sm text-slate-500">جاري التحميل...</div>;
-  }
+  if (loading) return <LoadingState message="جاري تحميل معاينة العقد..." />;
 
   return (
     <div className="min-h-screen bg-slate-100 print:bg-white">

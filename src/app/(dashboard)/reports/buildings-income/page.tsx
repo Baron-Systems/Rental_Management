@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LoadingState } from '@/components/ui/StatusMessage';
 
 interface BuildingIncomeRow {
   buildingId: string;
@@ -21,7 +22,7 @@ export default function BuildingsIncomeReportPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-center">جاري التحميل...</div>;
+  if (loading) return <LoadingState message="جاري تحميل تقرير إيرادات العمارات..." />;
 
   const totalIncome = data.reduce((sum, b) => sum + Number(b.totalIncome), 0);
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Alert } from '@/components/ui/Alert';
 
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState('');
@@ -44,11 +45,7 @@ export default function LoginPage() {
         </h1>
         <p className="mb-6 text-center text-gray-600">تسجيل الدخول</p>
 
-        {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+        {error && <Alert className="mb-4" title="تعذر تسجيل الدخول">{error}</Alert>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -82,7 +79,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? 'جاري التحميل...' : 'تسجيل الدخول'}
+            {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
           </button>
         </form>
       </div>

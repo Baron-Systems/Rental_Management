@@ -3,6 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { X, ImagePlus, Trash2, Loader2, XCircle, Download, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDialog } from '@/components/ui/DialogProvider';
+import { useToast } from '@/components/ui/ToastProvider';
+import { LoadingState, EmptyStateMessage } from '@/components/ui/StatusMessage';
 
 interface Attachment {
   id: string;
@@ -19,6 +22,8 @@ interface Props {
 }
 
 export function ContractAttachmentsModal({ contractId, isOpen, onClose }: Props) {
+  const { confirm } = useDialog();
+  const toast = useToast();
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -67,23 +72,29 @@ export function ContractAttachmentsModal({ contractId, isOpen, onClose }: Props)
         body: JSON.stringify({ attachments: items }),
       });
       if (res.ok) load();
-      else alert('حدث خطأ أثناء رفع الصور');
+      else toast.error('حدث خطأ أثناء رفع الصور');
     } catch {
-      alert('حدث خطأ أثناء رفع الصور');
+      toast.error('حدث خطأ أثناء رفع الصور');
     } finally {
       setUploading(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('هل أنت متأكد من حذف هذه الصورة؟')) return;
+    const confirmed = await confirm({
+      title: 'حذف الصورة',
+      description: 'هل أنت متأكد من حذف هذه الصورة المرفقة؟',
+      variant: 'warning',
+      confirmLabel: 'حذف',
+    });
+    if (!confirmed) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/contracts/${contractId}/attachments/${id}`, { method: 'DELETE' });
       if (res.ok) load();
-      else alert('حدث خطأ أثناء الحذف');
+      else toast.error('حدث خطأ أثناء حذف الصورة');
     } catch {
-      alert('حدث خطأ أثناء الحذف');
+      toast.error('حدث خطأ أثناء حذف الصورة');
     } finally {
       setDeletingId(null);
     }
@@ -112,11 +123,9 @@ export function ContractAttachmentsModal({ contractId, isOpen, onClose }: Props)
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin ml-2" /> جاري التحميل...
-            </div>
+            <LoadingState className="py-12" message="جاري تحميل الصور..." />
           ) : attachments.length === 0 ? (
-            <div className="text-center py-12 text-sm text-slate-500">لا توجد صور مرفقة</div>
+            <EmptyStateMessage className="py-12" title="لا توجد صور مرفقة" description="لم يتم إرفاق أي صور بهذا العقد بعد." />
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {attachments.map((a) => (
